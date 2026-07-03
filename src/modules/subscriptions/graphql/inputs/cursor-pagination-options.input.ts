@@ -1,6 +1,10 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
 
-import { PaymentInterval, SortBy, SubscriptionStatus } from '../../config';
+import {
+  SubscriptionPaymentInterval,
+  SubscriptionSortBy,
+  SubscriptionStatus,
+} from '../../enums';
 
 @InputType()
 export class CursorPaginationOptionsInput {
@@ -16,11 +20,11 @@ export class CursorPaginationOptionsInput {
   @Field(() => String, { nullable: true })
   search?: string;
 
-  @Field(() => SortBy, { nullable: true })
-  sortBy?: SortBy;
+  @Field(() => SubscriptionSortBy, { nullable: true })
+  sortBy?: SubscriptionSortBy;
 
-  @Field(() => PaymentInterval, { nullable: true })
-  paymentInterval?: PaymentInterval;
+  @Field(() => SubscriptionPaymentInterval, { nullable: true })
+  paymentInterval?: SubscriptionPaymentInterval;
 
   @Field(() => SubscriptionStatus, { nullable: true })
   status?: SubscriptionStatus;

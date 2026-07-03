@@ -2,7 +2,7 @@ import { Global, Module } from '@nestjs/common';
 
 import { SerializerModule } from '../serializer';
 
-import { RedisService } from './redis.service';
+import { RedisService } from './services';
 
 @Global()
 @Module({

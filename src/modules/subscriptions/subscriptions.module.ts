@@ -5,8 +5,8 @@ import { PrismaModule } from '~/core/prisma';
 import { RedisModule } from '~/core/redis';
 
 import { SubscriptionsResolver } from './graphql';
-import { SubscriptionsRepository } from './subscriptions.repository';
-import { SubscriptionsService } from './subscriptions.service';
+import { SubscriptionsRepository } from './repository';
+import { SubscriptionsService } from './services';
 
 @Global()
 @Module({

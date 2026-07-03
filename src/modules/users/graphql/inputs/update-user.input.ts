@@ -1,7 +1,7 @@
 import { Field, InputType } from '@nestjs/graphql';
 import { createZodDto } from 'nestjs-zod';
 
-import { UpdateUserSchema } from '../../config';
+import { UpdateUserSchema } from '../../schemas';
 
 @InputType()
 export class UpdateUserInput extends createZodDto(UpdateUserSchema) {

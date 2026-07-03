@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import { UpdateUserSchema, UserSchema } from '../config';
+import { UpdateUserSchema, UserSchema } from '../schemas';
 
 type UpdateUser = z.infer<typeof UpdateUserSchema>;
 
