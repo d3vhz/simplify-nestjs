@@ -18,7 +18,7 @@ const decodeCursor = (cursor: string) => {
   }
 };
 
-const buildCursorCondition = (cursor: string, sortOrder: 'asc' | 'desc') => {
+const buildCursorCondition = (cursor: string, sortOrder?: 'asc' | 'desc') => {
   const decoded = decodeCursor(cursor);
   const op = sortOrder === 'asc' ? 'gt' : 'lt';
 

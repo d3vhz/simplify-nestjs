@@ -5,9 +5,10 @@ import { ZodValidationPipe } from 'nestjs-zod';
 
 import { AuthModule } from '~/core/auth';
 import { GraphQLModule } from '~/core/graphql';
+import { PrismaModule } from '~/core/prisma';
+import { RedisModule } from '~/core/redis';
+import { SerializerModule } from '~/core/serializer';
 import { SupabaseModule } from '~/core/supabase';
-
-import { PrismaModule } from './core/prisma';
 
 @Module({
   imports: [
@@ -18,6 +19,8 @@ import { PrismaModule } from './core/prisma';
     }),
     AuthModule,
     PrismaModule,
+    RedisModule,
+    SerializerModule,
     GraphQLModule,
     SupabaseModule,
   ],

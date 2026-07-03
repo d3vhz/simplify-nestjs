@@ -18,4 +18,9 @@ enum SortBy {
   price = 'price',
 }
 
-export { PaymentInterval, SubscriptionStatus, SortBy };
+enum SubscriptionTtl {
+  SUBSCRIPTION = 300,
+  SUBSCRIPTION_LIST = 120,
+}
+
+export { PaymentInterval, SubscriptionStatus, SortBy, SubscriptionTtl };

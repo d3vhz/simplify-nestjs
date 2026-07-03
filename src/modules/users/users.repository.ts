@@ -1,36 +1,60 @@
 import { Injectable } from '@nestjs/common';
 
 import { Prisma, PrismaService } from '~/core/prisma';
+import { RedisService } from '~/core/redis';
+
+import { UserCacheKeys, UserTtl } from './config';
 
 @Injectable()
 export class UsersRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService
+  ) {}
 
   findById(id: string) {
-    return this.prisma.users.findUnique({
-      where: { id },
-    });
+    return this.redis.remember(UserCacheKeys.one(id), UserTtl.USER, () =>
+      this.prisma.users.findUnique({
+        where: { id },
+      })
+    );
   }
 
-  create(data: Prisma.UsersCreateInput) {
-    return this.prisma.users.create({
+  async create(data: Prisma.UsersCreateInput) {
+    const user = await this.prisma.users.create({
       data,
     });
+
+    await this.invalidateCache(user.id);
+
+    return user;
   }
 
-  update(
+  async update(
     id: string,
     data: Pick<Prisma.UsersUpdateInput, 'firstName' | 'lastName' | 'avatarUrl'>
   ) {
-    return this.prisma.users.update({
+    const user = await this.prisma.users.update({
       where: { id },
       data,
     });
+
+    await this.invalidateCache(user.id);
+
+    return user;
   }
 
-  delete(id: string) {
-    return this.prisma.users.delete({
+  async delete(id: string) {
+    const user = await this.prisma.users.delete({
       where: { id },
     });
+
+    await this.invalidateCache(user.id);
+
+    return user;
+  }
+
+  invalidateCache(id: string) {
+    return this.redis.del(UserCacheKeys.one(id));
   }
 }

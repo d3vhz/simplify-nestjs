@@ -9,8 +9,10 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "docker:up": "npx supabase start",
-    "docker:down": "npx supabase stop",
+    "supabase:up": "npx supabase start",
+    "supabase:down": "npx supabase stop",
+    "docker:up": "docker-compose up",
+    "docker:down": "docker-compose down",
     "prisma:generate": "npx prisma generate",
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0 --fix && prettier -c \"src/**/*.{ts,json}\"",
     "tsc": "tsc",
@@ -56,6 +58,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "supabase": "2.106.0",
+    "superjson": "^2.2.6",
     "zod": "^4.4.3"
   },
   "devDependencies": {
