@@ -1,1 +1,1 @@
-export { SubscriptionsResolver } from './subscriptions.resolver';
+export { SubscriptionsResolver } from './resolvers';

@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 
-import { SerializerService } from './serializer.service';
+import { SerializerService } from './services';
 
 @Global()
 @Module({

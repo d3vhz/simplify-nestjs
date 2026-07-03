@@ -1,2 +1,2 @@
 export { SerializerModule } from './serializer.module';
-export { SerializerService } from './serializer.service';
+export { SerializerService } from './services/serializer.service';

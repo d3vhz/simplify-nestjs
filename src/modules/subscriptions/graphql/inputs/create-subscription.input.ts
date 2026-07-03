@@ -1,11 +1,8 @@
 import { Field, InputType } from '@nestjs/graphql';
 import { createZodDto } from 'nestjs-zod';
 
-import {
-  CreateSubscriptionSchema,
-  PaymentInterval,
-  SubscriptionStatus,
-} from '../../config';
+import { SubscriptionPaymentInterval, SubscriptionStatus } from '../../enums';
+import { CreateSubscriptionSchema } from '../../schemas';
 
 @InputType()
 export class CreateSubscriptionInput extends createZodDto(
@@ -23,8 +20,8 @@ export class CreateSubscriptionInput extends createZodDto(
   @Field()
   price: number;
 
-  @Field(() => PaymentInterval)
-  paymentInterval: PaymentInterval;
+  @Field(() => SubscriptionPaymentInterval)
+  paymentInterval: SubscriptionPaymentInterval;
 
   @Field()
   paymentDate: Date;
