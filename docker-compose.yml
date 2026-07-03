@@ -1,0 +1,36 @@
+services:
+  redis:
+    image: ${REDIS_IMAGE}:${REDIS_VERSION}
+    container_name: redis
+
+    restart: unless-stopped
+
+    ports:
+      - "${REDIS_PORT}:6379"
+
+    volumes:
+      - ${REDIS_DATA_DIR}:/data
+
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --save
+      - "60"
+      - "1000"
+      - --databases
+      - "${REDIS_DATABASES}"
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge

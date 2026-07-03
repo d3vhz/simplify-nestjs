@@ -1,101 +1,106 @@
 import { Injectable } from '@nestjs/common';
 
 import { Prisma, PrismaService } from '~/core/prisma';
-import { buildCursorCondition, encodeCursor } from '~/shared/lib';
+import { RedisService } from '~/core/redis';
+import { encodeCursor } from '~/shared/lib';
 import { IBasePaginationResult } from '~/shared/types';
 
-import { SortBy } from './config';
+import { SortBy, SubscriptionCacheKeys, SubscriptionTtl } from './config';
 import { IFindAllOptions } from './types';
+import { buildKey, buildOrderBy, buildWhere } from './utils';
 
 @Injectable()
 export class SubscriptionsRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService
+  ) {}
 
-  async findAll({
+  findAll({
     userId,
     options = {},
   }: {
     userId: string;
     options?: IFindAllOptions;
   }): Promise<IBasePaginationResult<Prisma.SubscriptionsModel>> {
+    const cacheKey = buildKey(SubscriptionCacheKeys.list(userId), options);
+
     const {
       limit = 20,
-      after = null,
+      after,
       sortOrder = 'desc',
       search = '',
       sortBy = SortBy.createdAt,
-      paymentInterval = null,
-      status = null,
+      paymentInterval,
+      status,
     } = options;
 
-    const where: Prisma.SubscriptionsWhereInput = {
-      userId,
-      ...(after && buildCursorCondition(after, sortOrder)),
-      ...(search && {
-        title: {
-          contains: search,
-          mode: 'insensitive',
-        },
-      }),
-      ...(paymentInterval && {
-        paymentInterval: paymentInterval,
-      }),
-      ...(status && {
-        status: status,
-      }),
-    };
+    return this.redis.remember(
+      cacheKey,
+      SubscriptionTtl.SUBSCRIPTION_LIST,
+      async () => {
+        const [items, totalCount] = await this.prisma.$transaction([
+          this.prisma.subscriptions.findMany({
+            where: buildWhere({
+              userId,
+              after,
+              sortOrder,
+              search,
+              paymentInterval,
+              status,
+            }),
+            orderBy: buildOrderBy(sortBy, sortOrder),
+            take: limit + 1,
+          }),
+          this.prisma.subscriptions.count({
+            where: { userId },
+          }),
+        ]);
 
-    const orderBy: Prisma.SubscriptionsOrderByWithRelationInput[] = [];
+        const hasNextPage = items.length > limit;
+        const data = hasNextPage ? items.slice(0, limit) : items;
 
-    if (sortBy === SortBy.title) {
-      orderBy.push({ title: sortOrder });
-    } else if (sortBy === SortBy.price) {
-      orderBy.push({ price: sortOrder });
-    } else {
-      orderBy.push({ createdAt: sortOrder });
-    }
-
-    orderBy.push({ id: sortOrder });
-
-    const items = await this.prisma.subscriptions.findMany({
-      where,
-      orderBy,
-      take: limit + 1,
-    });
-
-    const hasNextPage = items.length > limit;
-    const data = hasNextPage ? items.slice(0, limit) : items;
-    const nextCursor =
-      hasNextPage && data.length > 0
-        ? encodeCursor(data[data.length - 1])
-        : null;
-    const totalCount = items.length;
-
-    return { data, nextCursor, hasNextPage, totalCount };
+        return {
+          data,
+          hasNextPage,
+          nextCursor: hasNextPage ? encodeCursor(data[data.length - 1]) : null,
+          totalCount,
+        };
+      }
+    );
   }
 
   findById({ userId, id }: { userId: string; id: string }) {
-    return this.prisma.subscriptions.findUnique({
-      where: { userId, id },
-    });
+    return this.redis.remember(
+      SubscriptionCacheKeys.one({ userId, id }),
+      SubscriptionTtl.SUBSCRIPTION,
+      () =>
+        this.prisma.subscriptions.findUnique({
+          where: { userId, id },
+        })
+    );
   }
 
-  create({
+  async create({
     userId,
     data,
   }: {
     userId: string;
     data: Omit<Prisma.SubscriptionsCreateInput, 'userId'>;
   }) {
-    return this.prisma.subscriptions.create({
+    const subscription = await this.prisma.subscriptions.create({
       data: {
         ...data,
-        userId: userId,
+        userId,
       },
     });
+
+    await this.invalidateCache({ userId, invalidateAll: true });
+
+    return subscription;
   }
 
-  update({
+  async update({
     userId,
     id,
     data,
@@ -104,15 +109,51 @@ export class SubscriptionsRepository {
     id: string;
     data: Omit<Prisma.SubscriptionsUpdateInput, 'userId' | 'id'>;
   }) {
-    return this.prisma.subscriptions.update({
+    const subscription = await this.prisma.subscriptions.update({
       where: { userId, id },
       data,
     });
+
+    await this.invalidateCache({ userId, id });
+
+    return subscription;
   }
 
-  delete({ userId, id }: { userId: string; id: string }) {
-    return this.prisma.subscriptions.delete({
+  async delete({ userId, id }: { userId: string; id: string }) {
+    const subscription = await this.prisma.subscriptions.delete({
       where: { userId, id },
     });
+
+    await this.invalidateCache({ userId, id });
+
+    return subscription;
+  }
+
+  private invalidateCache({
+    userId,
+    id,
+    invalidateAll,
+  }: {
+    userId: string;
+    id?: string;
+    invalidateAll?: boolean;
+  }) {
+    const operations = [
+      this.redis.delByPattern(SubscriptionCacheKeys.listPattern(userId)),
+    ];
+
+    if (invalidateAll) {
+      operations.push(
+        this.redis.delByPattern(SubscriptionCacheKeys.onePattern(userId))
+      );
+    }
+
+    if (id) {
+      operations.push(
+        this.redis.del(SubscriptionCacheKeys.one({ userId, id }))
+      );
+    }
+
+    return Promise.all(operations);
   }
 }
