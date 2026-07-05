@@ -5,11 +5,11 @@ import { ZodValidationPipe } from 'nestjs-zod';
 
 import { AuthModule } from '~/core/auth';
 import { GraphQLModule } from '~/core/graphql';
+import { HealthModule } from '~/core/health';
 import { PrismaModule } from '~/core/prisma';
 import { RedisModule } from '~/core/redis';
 import { SerializerModule } from '~/core/serializer';
 import { SupabaseModule } from '~/core/supabase';
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -17,6 +17,7 @@ import { SupabaseModule } from '~/core/supabase';
       envFilePath: ['.env', '.env.local'],
       validationSchema: null, // We use Zod for validation
     }),
+    HealthModule,
     AuthModule,
     PrismaModule,
     RedisModule,
