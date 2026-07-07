@@ -14,10 +14,13 @@ export class UsersRepository {
   ) {}
 
   findById(id: string) {
-    return this.redis.remember(UserCacheKeys.one(id), UserTTL.USER, () =>
-      this.prisma.users.findUnique({
-        where: { id },
-      })
+    return this.redis.remember(
+      UserCacheKeys.one(id),
+      UserTTL.USER,
+      async () =>
+        await this.prisma.users.findUnique({
+          where: { id },
+        })
     );
   }
 
