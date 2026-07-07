@@ -9,11 +9,7 @@ import { SubscriptionCacheKeys } from '../constants';
 import { SubscriptionSortBy, SubscriptionTTL } from '../enums';
 import { IFindAllOptions } from '../types';
 
-import {
-  buildKey,
-  buildOrderBy,
-  buildWhere,
-} from './subscription-repository.helpers';
+import { buildOrderBy, buildWhere } from './subscription-repository.helpers';
 
 @Injectable()
 export class SubscriptionsRepository {
@@ -22,15 +18,13 @@ export class SubscriptionsRepository {
     private readonly redis: RedisService
   ) {}
 
-  findAll({
+  async findAll({
     userId,
     options = {},
   }: {
     userId: string;
     options?: IFindAllOptions;
   }): Promise<IBasePaginationResult<Prisma.SubscriptionsModel>> {
-    const cacheKey = buildKey(SubscriptionCacheKeys.list(userId), options);
-
     const {
       limit = 20,
       after,
@@ -41,47 +35,41 @@ export class SubscriptionsRepository {
       status,
     } = options;
 
-    return this.redis.remember(
-      cacheKey,
-      SubscriptionTTL.SUBSCRIPTION_LIST,
-      async () => {
-        const [items, totalCount] = await this.prisma.$transaction([
-          this.prisma.subscriptions.findMany({
-            where: buildWhere({
-              userId,
-              after,
-              sortOrder,
-              search,
-              paymentInterval,
-              status,
-            }),
-            orderBy: buildOrderBy(sortBy, sortOrder),
-            take: limit + 1,
-          }),
-          this.prisma.subscriptions.count({
-            where: { userId },
-          }),
-        ]);
+    const [items, totalCount] = await this.prisma.$transaction([
+      this.prisma.subscriptions.findMany({
+        where: buildWhere({
+          userId,
+          after,
+          sortOrder,
+          search,
+          paymentInterval,
+          status,
+        }),
+        orderBy: buildOrderBy(sortBy, sortOrder),
+        take: limit + 1,
+      }),
+      this.prisma.subscriptions.count({
+        where: { userId },
+      }),
+    ]);
 
-        const hasNextPage = items.length > limit;
-        const data = hasNextPage ? items.slice(0, limit) : items;
+    const hasNextPage = items.length > limit;
+    const data = hasNextPage ? items.slice(0, limit) : items;
 
-        return {
-          data,
-          hasNextPage,
-          nextCursor: hasNextPage ? encodeCursor(data[data.length - 1]) : null,
-          totalCount,
-        };
-      }
-    );
+    return {
+      data,
+      hasNextPage,
+      nextCursor: hasNextPage ? encodeCursor(data[data.length - 1]) : null,
+      totalCount,
+    };
   }
 
   findById({ userId, id }: { userId: string; id: string }) {
     return this.redis.remember(
       SubscriptionCacheKeys.one({ userId, id }),
       SubscriptionTTL.SUBSCRIPTION,
-      () =>
-        this.prisma.subscriptions.findUnique({
+      async () =>
+        await this.prisma.subscriptions.findUnique({
           where: { userId, id },
         })
     );
