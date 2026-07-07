@@ -14,20 +14,13 @@ export class UsersRepository {
   ) {}
 
   findById(id: string) {
-    return this.redis.remember(
-      UserCacheKeys.one(id),
-      UserTTL.USER,
-      async () =>
-        await this.prisma.users.findUnique({
-          where: { id },
-        })
+    return this.redis.remember(UserCacheKeys.one(id), UserTTL.USER, () =>
+      this.prisma.users.findUnique({ where: { id } })
     );
   }
 
   async create(data: Prisma.UsersCreateInput) {
-    const user = await this.prisma.users.create({
-      data,
-    });
+    const user = await this.prisma.users.create({ data });
 
     await this.invalidateCache(user.id);
 
@@ -38,10 +31,7 @@ export class UsersRepository {
     id: string,
     data: Pick<Prisma.UsersUpdateInput, 'firstName' | 'lastName' | 'avatarUrl'>
   ) {
-    const user = await this.prisma.users.update({
-      where: { id },
-      data,
-    });
+    const user = await this.prisma.users.update({ where: { id }, data });
 
     await this.invalidateCache(user.id);
 
@@ -49,9 +39,7 @@ export class UsersRepository {
   }
 
   async delete(id: string) {
-    const user = await this.prisma.users.delete({
-      where: { id },
-    });
+    const user = await this.prisma.users.delete({ where: { id } });
 
     await this.invalidateCache(user.id);
 
