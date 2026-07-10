@@ -1,4 +1,3 @@
-import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import compression from 'compression';
 import helmet from 'helmet';
@@ -38,11 +37,5 @@ async function bootstrap() {
 
   const port = process.env.PORT!;
   await app.listen(port);
-
-  Logger.log(`🚀 Server running on http://localhost:${port}`, 'Bootstrap');
-  Logger.log(
-    `🍃 GraphQL Playground: http://localhost:${port}/graphql`,
-    'Bootstrap'
-  );
 }
 void bootstrap();
